@@ -1,85 +1,116 @@
 #include "header.h"
 
 
-char * get_line(){
+char * get_line()
+{
 
     char * line = NULL, * tmp = NULL;
     int ch = 0, count = 0;
 
-    do{
+    do
+    {
         count++;
 
         tmp = realloc(line, sizeof(char)*count);
 
-        if (tmp=NULL){
+        if (tmp==NULL)
+        {
             free(line);
             line = NULL;
             break;
         }
-        else{
-        line = tmp;
-        line[count-1] = ch;
+        else
+        {
+            line = tmp;
+            line[count-1] = ch;
         }
-    }while ((ch = getch())!='\n');
+    }
+    while ((ch = getch())!='\n');
 
     return (line);
 
 }
 
-// This is the function we pass to LC, which writes the output to a BufferStruct
-static size_t WriteMemoryCallback
-(void *ptr, size_t size, size_t nmemb, void *data)
+
+static size_t save_to_buffer(void *ptr, size_t size, size_t nmemb, void *data)
+//właściwa funkcja zapisująca zawartość strony w zmiennej typu Buffer(struct Buffer)
 {
-size_t realsize = size * nmemb;
+    size_t realsize = size * nmemb;
 
-Buffer * buffer = (Buffer *) data;
+    Buffer * buffer = (Buffer *) data;
 
-buffer->data = realloc(buffer->data, buffer->size + realsize + 1);
+    buffer->data = realloc(buffer->data, buffer->size + realsize + 1);
 
-if ( buffer->data )
+    if (buffer->data)
+    {
+        memcpy( &( buffer->data[ buffer->size ] ), ptr, realsize );
+        buffer->size += realsize;
+        buffer->data[buffer->size-1] = '\0';
+    }
+    return realsize;
+}
+
+int get_page(CURL * myHandle, Buffer * output)
+//funkcja pobierająca plik tekstowy i zapisująca jego zawartość w strukturze Buffer
 {
-memcpy( &( buffer->data[ buffer->size ] ), ptr, realsize );
-buffer->size += realsize;
-buffer->data[ buffer->size ] = '\0';
-}
-return realsize;
-}
+    double length;
+    CURLcode result;
 
-Buffer * get_page( CURL * myHandle, Buffer * output){
-
-    //FILE * tmp;
-    long http_code;
-    double c_length;
-    CURLcode result; // We’ll store the result of CURL’s webpage retrieval, for simple error checking.
-
-
-
-    myHandle = curl_easy_init ( ) ;
-    // Notice the lack of major error checking, for brevity
     curl_easy_setopt(myHandle, CURLOPT_URL, "http://www.wikipedia.com");
-    curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, (void *)output);
-
-    curl_easy_setopt(myHandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback); // Passing the function pointer to LC
+    curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, (void*)output);
+    curl_easy_setopt(myHandle, CURLOPT_WRITEFUNCTION, save_to_buffer);
 
     result = curl_easy_perform(myHandle);
 
-    if(result==0) {
+    if(result==0)
+    {
         printf("file downloaded\n");
-    } else {
+    }
+    else
+    {
         printf("ERROR in dowloading file\n");
     }
-    printf("get http return code\n");
-    curl_easy_getinfo(myHandle, CURLINFO_RESPONSE_CODE, &http_code);
-    printf("http code: %lu\n", http_code);
 
     printf("get size of download page\n");
-    curl_easy_getinfo(myHandle, CURLINFO_SIZE_DOWNLOAD, &c_length);
-    printf("length: %g\n", c_length);
-    output->size = (int)c_length + 1;
+    curl_easy_getinfo(myHandle, CURLINFO_SIZE_DOWNLOAD, &length);
+    printf("length: %g\n", length);
+    output->size = (int)length;
 
     printf("END: close all files and sessions\n");
 
+    return (int)result;
+}
 
-    //fclose(tmp);
-return 0;
+int * get_tag(char * tag, Buffer * result)
+//Funkcja zapisująca treść znacznika w zmiennej Buffer
+{
+    char tmp[TAG_LEN];
+    int len=0;
+
+    while(*tag!='>'&&*tag!='\0'&&tag)
+    {
+        tmp[len]=*tag;
+        tag++;
+
+        if (len<TAG_LEN-1){
+            len++;
+            tmp[len]='\0';
+            }
+        else{
+            len =0;
+            tmp[TAG_LEN-1]='\0';
+            }
+
+    }
+    tag++;
+
+    //result = malloc(sizeof(tmp)+sizeof(len));
+
+    //strcpy(result->data, tmp);
+
+    result->data=tmp;
+
+    result->size=len;
+
+    return(0);
 }
