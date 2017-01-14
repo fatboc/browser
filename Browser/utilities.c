@@ -56,7 +56,7 @@ int get_page(CURL * myHandle, Buffer * output)
     double length;
     CURLcode result;
 
-    curl_easy_setopt(myHandle, CURLOPT_URL, "http://www.wikipedia.com");
+    curl_easy_setopt(myHandle, CURLOPT_URL, "http://www.example.com");
     curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, (void*)output);
     curl_easy_setopt(myHandle, CURLOPT_WRITEFUNCTION, save_to_buffer);
 
@@ -92,14 +92,16 @@ int * get_tag(char * tag, Buffer * result)
         tmp[len]=*tag;
         tag++;
 
-        if (len<TAG_LEN-1){
+        if (len<TAG_LEN-1)
+        {
             len++;
             tmp[len]='\0';
-            }
-        else{
+        }
+        else
+        {
             len =0;
             tmp[TAG_LEN-1]='\0';
-            }
+        }
 
     }
     tag++;
