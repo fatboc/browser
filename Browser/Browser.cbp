@@ -48,10 +48,6 @@
 		<Unit filename="page.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="url_fopen.c">
-			<Option compilerVar="CC" />
-			<Option target="Release" />
-		</Unit>
 		<Unit filename="utilities.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <curl/curl.h>
 #define URL_START 50
-#define TAG_LEN 200
+#define TAG_LEN 250
 #include <string.h>
 #include <ncurses.h>
+#define MAXLEN 128
+
 
 typedef struct Buffer
 {
@@ -12,7 +14,11 @@ typedef struct Buffer
     size_t size;
 } Buffer;
 
+int init();
+
 void powitanie ();
+
+int line_count(Buffer * buffer, int pad_cols);
 
 char * get_url();
 
@@ -35,3 +41,5 @@ void continue_msg();
 void head_ignore();
 
 static size_t save_to_buffer(void *ptr, size_t size, size_t nmemb, void *data);
+
+int pad_scroll(Buffer * buffer, WINDOW * subwin, int StartY, int StartX, int Height, int Width);

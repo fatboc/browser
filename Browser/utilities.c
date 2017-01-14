@@ -1,5 +1,25 @@
 #include "header.h"
 
+int init()
+{
+
+    //powitanie();
+
+    //char * url = malloc(sizeof(char)*URL_START);
+
+    curl_global_init( CURL_GLOBAL_ALL );
+
+    initscr();
+    raw();
+    //noecho();
+    keypad(stdscr, TRUE);
+    scrollok(stdscr,TRUE);
+    idlok(stdscr,TRUE);
+    nonl();
+
+    return(0);
+
+}
 
 char * get_line()
 {
@@ -56,7 +76,7 @@ int get_page(CURL * myHandle, Buffer * output)
     double length;
     CURLcode result;
 
-    curl_easy_setopt(myHandle, CURLOPT_URL, "http://www.wikipedia.com");
+    curl_easy_setopt(myHandle, CURLOPT_URL, "http://studia.elka.pw.edu.pl");
     curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, (void*)output);
     curl_easy_setopt(myHandle, CURLOPT_WRITEFUNCTION, save_to_buffer);
 
@@ -64,19 +84,19 @@ int get_page(CURL * myHandle, Buffer * output)
 
     if(result==0)
     {
-        printf("file downloaded\n");
+        printw("file downloaded\n");
     }
     else
     {
-        printf("ERROR in dowloading file\n");
+        printw("ERROR in dowloading file\n");
     }
 
-    printf("get size of download page\n");
+    printw("get size of download page\n");
     curl_easy_getinfo(myHandle, CURLINFO_SIZE_DOWNLOAD, &length);
-    printf("length: %g\n", length);
+    printw("length: %g\n", length);
     output->size = (int)length;
 
-    printf("END: close all files and sessions\n");
+    printw("END: close all files and sessions\n");
 
     return (int)result;
 }
@@ -92,14 +112,16 @@ int * get_tag(char * tag, Buffer * result)
         tmp[len]=*tag;
         tag++;
 
-        if (len<TAG_LEN-1){
+        if (len<TAG_LEN-1)
+        {
             len++;
             tmp[len]='\0';
-            }
-        else{
+        }
+        else
+        {
             len =0;
             tmp[TAG_LEN-1]='\0';
-            }
+        }
 
     }
     tag++;
@@ -113,4 +135,55 @@ int * get_tag(char * tag, Buffer * result)
     result->size=len;
 
     return(0);
+}
+
+int line_count(Buffer * buffer, int pad_cols)
+{
+
+    int fts=1, x = 0, count=0, len=0;
+    char * tmp = buffer->data;
+    char znacznik[TAG_LEN];
+    while (count<buffer->size)
+    {
+        if(strcmp(znacznik,"/html")==0) break;
+
+        if (*tmp!='<')
+        {
+            if (x==pad_cols||*tmp=='\n')
+            {
+                fts++;
+                x=0;
+            }
+            tmp++;
+            count++;
+            x++;
+        }
+        else
+        {
+            tmp++;
+            len=0;
+            while(*tmp!='>'&&*tmp!='\0'&&tmp)
+            {
+                znacznik[len]=*tmp;
+                tmp++;
+
+                if (len<TAG_LEN-1)
+                {
+                    len++;
+                    znacznik[len]='\0';
+                }
+                else
+                {
+                    len=0;
+                    znacznik[TAG_LEN-1]='\0';
+                }
+
+            }
+            count+=len;
+            tmp++;
+
+        }
+    }
+
+    return(fts);
 }

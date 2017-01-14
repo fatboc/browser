@@ -3,10 +3,25 @@
 int view_page(Buffer * buffer)
 //Funkcja wyszukująca znaczniki i wyświetlająca pozostałą zawartość w postaci pojedynczych znaków
 {
-    int count = 0;
+
+    WINDOW *pad_ptr;
+    int pad_lines, pad_cols;
     char znacznik[TAG_LEN];
-    int len=0;
+    int len=0, count=0;
     char * tmp = buffer->data;
+    int StartX, StartY;
+
+    if(COLS>MAXLEN)
+        pad_cols = MAXLEN;
+    else
+        pad_cols = COLS;
+
+    pad_lines = line_count(buffer, pad_cols);
+
+    pad_ptr = newpad(pad_lines, pad_cols);
+
+    StartX = (COLS - pad_cols)/2;
+    StartY = (LINES - pad_lines)/2;
 
     while (count<buffer->size)//(*tmp!='\0'&&tmp!=0&&tmp)
     {
@@ -14,8 +29,8 @@ int view_page(Buffer * buffer)
 
         if (*tmp!='<')
         {
-            putchar(*tmp);
-            //refresh();
+            waddch(pad_ptr, *tmp);
+            refresh();
             tmp++;
             count++;
         }
@@ -40,19 +55,77 @@ int view_page(Buffer * buffer)
                 }
 
             }
-            //printf("\n----------\ntag:%s; len:%d;\n----------\n", znacznik, len);
+
             count+=len;
             tmp++;
 
         }
     }
+    pad_scroll(buffer, pad_ptr, StartY, StartX, pad_lines, pad_cols);
+    delwin(pad_ptr);
     return 0;
 }
-
 
 char * geturl (char * url)
 {
 
     return (0);
 
+}
+
+int pad_scroll(Buffer * buffer, WINDOW * pad_ptr, int StartY, int StartX, int pad_height, int Width)
+{
+    int Key, cols = 0, Choice =0;
+
+    int Height = LINES;
+
+    WINDOW * SubWin;
+    while (Choice == 0)
+    {
+        SubWin = subpad(pad_ptr, LINES, COLS, cols, 0);
+        keypad(SubWin, true);
+        prefresh(SubWin, 0,0,0,0,LINES,Width);
+        Key = wgetch(SubWin);
+        switch(Key)
+        {
+        case KEY_UP:
+        {
+            if (cols <= 0) continue;
+            cols--;
+            break;
+        }
+        case KEY_DOWN:
+        {
+            if (cols+Height+1 >= pad_height) continue;
+            cols++;
+            break;
+        }
+        case KEY_PPAGE: /*Page Up*/
+        {
+            if (cols <= 0) continue;
+            cols -= Height;
+            if (cols < 0) cols = 0;
+            break;
+        }
+        case KEY_NPAGE: /*Page Down*/
+            if (cols+Height+1 >= pad_height) continue;
+            cols += Height;
+            if (cols+Height+1 > pad_height) cols = pad_height-Height-1;
+            break;
+        case KEY_HOME:
+            cols = 0;
+            break;
+        case KEY_END:
+            cols = pad_height-Height-1;
+            break;
+        case 'q': /* Enter */
+        {
+            Choice = 1;
+            break;
+        }
+        }
+        delwin(SubWin);
+    }
+
+    return(0);
 }
