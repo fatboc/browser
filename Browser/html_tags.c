@@ -80,7 +80,7 @@ void * tag_handler(char * tag, WINDOW * window, Buffer * buffer)
         init_pair(2, COLOR_BLUE, COLOR_WHITE);
         wattron(window, COLOR_PAIR(2));
         wattron(window, A_UNDERLINE);
-        char url[TAG_LEN];
+        static char url[TAG_LEN];
         while(*tag!='\"') tag++;
         tag++;
         while(*tag!='\"')

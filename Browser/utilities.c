@@ -32,6 +32,11 @@ int browse(CURL * myHandle, Buffer * buffer)
     char * tmp = view_page(buffer);
 
     clear();
+    free(buffer->data);
+    buffer->data=NULL;
+    buffer->size=0;
+
+    printw("%s\n", tmp);
 
     get_page(myHandle, buffer, tmp);
     }
@@ -79,12 +84,12 @@ static size_t save_to_buffer(void *ptr, size_t size, size_t nmemb, void *data)
 
     Buffer * buffer = (Buffer *) data;
 
-    buffer->data = realloc(buffer->data, tmp + 1);
+    buffer->data = realloc(buffer->data, buffer->size + tmp + 1);
 
     if (buffer->data)
     {
         memcpy(&(buffer->data[buffer->size]), ptr, tmp);
-        buffer->size = tmp;
+        buffer->size += tmp;
         buffer->data[buffer->size-1] = '\0';
     }
     return tmp;
@@ -97,7 +102,7 @@ int get_page(CURL * myHandle, Buffer * buffer, char * url)
     long code;
     CURLcode result;
 
-    printf("Pobieranie...\n");
+    printw("Pobieranie...\n");
     refresh();
     curl_easy_setopt(myHandle, CURLOPT_URL, url);
 
@@ -118,7 +123,7 @@ int get_page(CURL * myHandle, Buffer * buffer, char * url)
     }
     else
     {
-        printw("Blad pobierania.\n");
+        printw("Blad pobierania. Kod: %d\n", result);
     }
 
     curl_easy_getinfo(myHandle, CURLINFO_SIZE_DOWNLOAD, &length);
