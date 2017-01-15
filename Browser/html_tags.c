@@ -1,6 +1,6 @@
 #include "header.h"
 
-int tag_handler(CURL * myHandle, char * tag, WINDOW * window, Buffer * buffer, char * url)
+int tag_handler(char * tag, WINDOW * window, Buffer * buffer)
 {
     str_to_lower(tag);
 
@@ -72,27 +72,9 @@ int tag_handler(CURL * myHandle, char * tag, WINDOW * window, Buffer * buffer, c
     }
     if(strncmp(tag, "a href", 6)==0)
     {
-        int len=0;
         init_pair(2, COLOR_BLUE, COLOR_WHITE);
         wattron(window, COLOR_PAIR(2));
         wattron(window, A_UNDERLINE);
-        while(*tag!='\"')
-            tag++;
-            tag++;
-        while(*tag!='\"'){len++;
-            tag++;}
-        tag-=len;
-        //url = realloc(url, sizeof(char)*(len+1));
-
-        strncpy(url, tag, len);
-
-        url[len]='\0';
-        printw("%s", url); refresh();
-        int c;
-        while(c=getch()!='q');
-
-        //follow_link(myHandle, window, url, buffer);
-
     }
     if(strcmp(tag, "/a")==0)
     {
@@ -103,3 +85,4 @@ int tag_handler(CURL * myHandle, char * tag, WINDOW * window, Buffer * buffer, c
 
     return 0;
 }
+
