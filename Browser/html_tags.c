@@ -1,16 +1,13 @@
 #include "header.h"
 
-int tag_handler(char * tag, WINDOW * window, Buffer * buffer)
+void * tag_handler(char * tag, WINDOW * window, Buffer * buffer)
 {
     str_to_lower(tag);
-
-//    {}
 
     if(strcmp(tag, "b")==0)
     {
         wattron(window, A_BOLD);
     }
-
     if(strcmp(tag, "/b")==0)
     {
         wattroff(window, A_BOLD);
@@ -27,7 +24,6 @@ int tag_handler(char * tag, WINDOW * window, Buffer * buffer)
     {
         wattroff(window, A_ITALIC);
     }
-
     if(strcmp(tag, "/i")==0)
     {
         wattroff(window, A_ITALIC);
@@ -66,22 +62,46 @@ int tag_handler(char * tag, WINDOW * window, Buffer * buffer)
     {
         waddch(window, '\n');
     }
+    if(strcmp(tag, "/tr")==0)
+    {
+        waddch(window, '\n');
+    }
     if(strcmp(tag, "/div")==0)
+    {
+        waddch(window, '\n');
+    }
+    if(strcmp(tag, "/h1")==0)
     {
         waddch(window, '\n');
     }
     if(strncmp(tag, "a href", 6)==0)
     {
+        int len =0;
         init_pair(2, COLOR_BLUE, COLOR_WHITE);
         wattron(window, COLOR_PAIR(2));
         wattron(window, A_UNDERLINE);
+        char url[TAG_LEN];
+        while(*tag!='\"') tag++;
+        tag++;
+        while(*tag!='\"')
+        {
+        len++;
+        tag++;
+        }
+        tag-=len;
+
+        strncpy(url, tag, len);
+
+        url[len]='\0';
+
+        return (url);
     }
     if(strcmp(tag, "/a")==0)
     {
         wattroff(window, COLOR_PAIR(2));
         wattroff(window, A_UNDERLINE);
-    }
 
+    }
 
     return 0;
 }

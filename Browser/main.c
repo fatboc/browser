@@ -2,34 +2,20 @@
 
 int main()
 {
-
     CURL * myHandle = curl_easy_init();
-    curl_global_init( CURL_GLOBAL_ALL );
 
-    initscr();
-    raw();
-    noecho();
-    keypad(stdscr, TRUE);
-    scrollok(stdscr,TRUE);
-    idlok(stdscr,TRUE);
-    nonl();
+    init();
 
-    int ch;
+    Buffer * buffer;
+    buffer->data = NULL;
+    buffer->size = 0;
 
-    Buffer * output;
-    output->data = NULL;
-    output->size = 0;
+    browse(myHandle, buffer);
 
-    get_page(myHandle, output);
-    refresh();
-    //do{printw("ELO"); refresh();}
-    while((ch = getch())!='q');
+    endwin();
+    curl_easy_cleanup(myHandle);
+    free(buffer->data);
+    buffer = NULL;
 
-    view_page(output);
-    printw("\nLibCurl rules!\n");
-    refresh();
-
-    curl_easy_cleanup( myHandle );
-    endwin();			/* End curses mode		  */
-    return 0;
+    return(EXIT_SUCCESS);
 }

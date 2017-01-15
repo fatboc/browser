@@ -7,8 +7,8 @@
 #include <ncurses.h>
 #define MAXLEN 128
 
-
 typedef struct Buffer
+//struktura w której zapisywana jest pobrana zawartość strony
 {
     char * data;
     size_t size;
@@ -18,6 +18,10 @@ int init();
 
 void powitanie ();
 
+int browse(CURL * myHandle, Buffer * buffer);
+
+int close(CURL * myHandle, Buffer * buffer);
+
 int line_count(Buffer * buffer, int pad_cols);
 
 void str_to_lower(char * str);
@@ -26,13 +30,13 @@ char * get_url();
 
 char * get_line();
 
-int get_page( CURL * myHandle, Buffer * output);
+int get_page(CURL * myHandle, Buffer * output, char * url);
 
 int check_url (char * url);
 
 void errurl_msg();
 
-int view_page (Buffer * buffer);
+void * view_page (Buffer * buffer);
 
 int * get_tag (char * tag, Buffer * result);
 
@@ -44,6 +48,6 @@ void head_ignore();
 
 static size_t save_to_buffer(void *ptr, size_t size, size_t nmemb, void *data);
 
-int pad_scroll(Buffer * buffer, WINDOW * subwin, int StartY, int StartX, int Height, int Width);
+int pad_scroll(Buffer * buffer, WINDOW * subwin, int Height, int Width);
 
-int tag_handler(char * tag, WINDOW * window, Buffer * buffer);
+void * tag_handler(char * tag, WINDOW * window, Buffer * buffer);

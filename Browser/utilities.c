@@ -1,24 +1,44 @@
 #include "header.h"
 
 int init()
+//funkcja rozpoczynająca działanie programu, ładuje podstawowe moduły oraz zmienia
+//ustawienia początkowe
 {
+    curl_global_init( CURL_GLOBAL_ALL );  //inicjalizacja CURL
 
-    //powitanie();
+    initscr();                            //inicjalizacja ncurses
+    raw();                                //znaki przekazywane bezpośrednio do programu
+    noecho();                             //wprowadzone znaki nie pojawiają się w konsoli
+    keypad(stdscr, TRUE);                 //dostęp do całej klawiatury
 
-    //char * url = malloc(sizeof(char)*URL_START);
+    return(EXIT_SUCCESS);
 
-    curl_global_init( CURL_GLOBAL_ALL );
+}
 
-    initscr();
-    raw();
-    //noecho();
-    keypad(stdscr, TRUE);
-    scrollok(stdscr,TRUE);
-    idlok(stdscr,TRUE);
-    nonl();
+int browse(CURL * myHandle, Buffer * buffer)
+//funckja łącząca pobranie i wyświetlenie strony
+{
+    int ch;
 
-    return(0);
+    char url[TAG_LEN]="http://www.example.com";
 
+    get_page(myHandle, buffer, url);
+
+    while((ch = getch())!='w')
+    {
+    int sh;
+    while((sh = getch())!='q');
+
+    char * tmp = view_page(buffer);
+
+    clear();
+
+    get_page(myHandle, buffer, tmp);
+    }
+
+
+
+    return(EXIT_SUCCESS);
 }
 
 char * get_line()
@@ -55,49 +75,64 @@ char * get_line()
 static size_t save_to_buffer(void *ptr, size_t size, size_t nmemb, void *data)
 //właściwa funkcja zapisująca zawartość strony w zmiennej typu Buffer(struct Buffer)
 {
-    size_t realsize = size * nmemb;
+    size_t tmp = size * nmemb;
 
     Buffer * buffer = (Buffer *) data;
 
-    buffer->data = realloc(buffer->data, buffer->size + realsize + 1);
+    buffer->data = realloc(buffer->data, tmp + 1);
 
     if (buffer->data)
     {
-        memcpy( &( buffer->data[ buffer->size ] ), ptr, realsize );
-        buffer->size += realsize;
+        memcpy(&(buffer->data[buffer->size]), ptr, tmp);
+        buffer->size = tmp;
         buffer->data[buffer->size-1] = '\0';
     }
-    return realsize;
+    return tmp;
 }
 
-int get_page(CURL * myHandle, Buffer * output)
-//funkcja pobierająca plik tekstowy i zapisująca jego zawartość w strukturze Buffer
+int get_page(CURL * myHandle, Buffer * buffer, char * url)
+//funkcja pobierająca informacje o stronie oraz jej zawartość i ją w strukturze Buffer
 {
     double length;
+    long code;
     CURLcode result;
 
-    curl_easy_setopt(myHandle, CURLOPT_URL, "http://www.example.com");
+    printf("Pobieranie...\n");
+    refresh();
+    curl_easy_setopt(myHandle, CURLOPT_URL, url);
+
+    //wybór adresu url żądanej strony
     curl_easy_setopt(myHandle, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, (void*)output);
+    //podążanie za adresem w razie przekierowań
+    curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, (void*)buffer);
+
+    //wybór miejsca zapisu danych (struktura Buffer)
     curl_easy_setopt(myHandle, CURLOPT_WRITEFUNCTION, save_to_buffer);
+    //wybór funcji zapisującej dane
 
     result = curl_easy_perform(myHandle);
 
     if(result==0)
     {
-        printw("file downloaded\n");
+        printw("Plik pobrany.\n");
     }
     else
     {
-        printw("ERROR in dowloading file\n");
+        printw("Blad pobierania.\n");
     }
 
-    printw("get size of download page\n");
     curl_easy_getinfo(myHandle, CURLINFO_SIZE_DOWNLOAD, &length);
-    printw("length: %g\n", length);
-    output->size = (int)length;
+    //pobieranie informacji o długości pliku
+    printw("Dlugosc: %.0f\n", length);
 
-    printw("END: close all files and sessions\n");
+    curl_easy_getinfo(myHandle, CURLINFO_RESPONSE_CODE, &code);
+    //pobieranie kodu http
+    printw("Kod HTTP: %d\n", code);
+
+    buffer->size = (int)length;
+
+    printw("\nWsicnij 'q' by wyswietlic strone.\n");
+    refresh();
 
     return (int)result;
 }
@@ -139,32 +174,47 @@ int * get_tag(char * tag, Buffer * result)
 }
 
 int line_count(Buffer * buffer, int pad_cols)
+//funcja zliczajaca ilosc wierszy wyswietlanej strony
 {
+    char znacznik[TAG_LEN]="";
 
-    int fts=1, x = 0, count=0, len=0;
+    int len=0, head=0, comment=0;
     char * tmp = buffer->data;
-    char znacznik[TAG_LEN];
-    while (count<buffer->size)
-    {
-        if(strcmp(znacznik,"/html")==0) break;
+    //zmienne podobnie jak w view_page()
 
+    int lines=1;
+
+    while ((strcmp(znacznik,"/html")!=0)&&tmp)
+    {
         if (*tmp!='<')
         {
-            if (x==pad_cols||*tmp=='\n')
+            if (len>1)
             {
-                fts++;
-                x=0;
+                if(strncmp(znacznik, "head", 4)==0)
+                {
+                    head++; //ignorujemy wszystko do końca el. head
+                }
+                if(strncmp(znacznik, "/head", 5)==0)
+                {
+                    head=0;
+                }
+            }
+            if(*tmp!='\n'&&*tmp!='\r'&&head==0&&comment==0)
+            {
+                lines++;
             }
             tmp++;
-            count++;
-            x++;
         }
-        else
+        else //zaczyna się znacznik
         {
             tmp++;
             len=0;
-            while(*tmp!='>'&&*tmp!='\0'&&tmp)
+            while(*tmp!='>'&&*tmp!='\0'&&(!comment||(comment&&strncmp(tmp-2, "-->", 3))))
             {
+                if((strncmp(znacznik, "!--", 3)==0))
+                {
+                    comment++;//ignorujemy wszystko do końca komentarza
+                }
                 znacznik[len]=*tmp;
                 tmp++;
 
@@ -173,20 +223,20 @@ int line_count(Buffer * buffer, int pad_cols)
                     len++;
                     znacznik[len]='\0';
                 }
-                else
+                else //jeśli znacznik jest wyjątkowo długi
                 {
                     len=0;
                     znacznik[TAG_LEN-1]='\0';
                 }
-
             }
-            count+=len;
-            tmp++;
+            if (!strcmp(znacznik, "br")||!strcmp(znacznik, "/p")||!strcmp(znacznik, "/div")||
+                !strcmp(znacznik, "/h1")||!strcmp(znacznik, "/tr")) lines++; //formatowanie wymusza nową linię
 
+            if(comment&&*(tmp-2)=='-'&&*(tmp-1)=='-'&&*tmp=='>') comment=0;
+            tmp++;
         }
     }
-
-    return(fts);
+    return lines;
 }
 
 void str_to_lower(char * str)

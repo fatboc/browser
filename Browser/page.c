@@ -1,65 +1,62 @@
 #include "header.h"
 
-int view_page(Buffer * buffer)
+void * view_page(Buffer * buffer)
 //Funkcja wyszukująca znaczniki i wyświetlająca pozostałą zawartość w postaci pojedynczych znaków
 {
 
     WINDOW *pad_ptr;
-    int pad_lines, pad_cols;
-    char znacznik[TAG_LEN];
-    int len=0, count=0, head=0;
+
+    int pad_lines;
+    char znacznik[TAG_LEN]="";
+
+    int len=0, head=0, comment=0;
     char * tmp = buffer->data;
-    int StartX, StartY;
+    //len - długość znacznika, head - obecna pozyzcja jest częścią el. head
+    //comment - obecna pozycja jest częścią komentarza, tmp - zmienna pomocnicza
 
-    if(COLS>MAXLEN)
-        pad_cols = MAXLEN;
-    else
-        pad_cols = COLS;
+    void * result;
+    static char * url;
 
-    pad_lines = line_count(buffer, pad_cols);
+    pad_lines = line_count(buffer, COLS);
 
-    pad_ptr = newpad(pad_lines, pad_cols);
+    pad_ptr = newpad(pad_lines, COLS);
 
     start_color();
     init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(2, COLOR_RED, COLOR_WHITE);
-
     wbkgd(pad_ptr,COLOR_PAIR(1));
 
-    StartX = (COLS - pad_cols)/2;
-    StartY = (LINES - pad_lines)/2;
-
-    while (count<buffer->size)//(*tmp!='\0'&&tmp!=0&&tmp)
+    while ((strcmp(znacznik,"/html")!=0)&&tmp)
     {
-        if(strcmp(znacznik,"/html")==0) break;
-
         if (*tmp!='<')
         {
-            if (len>3)
+            if (len>1)
             {
                 if(strncmp(znacznik, "head", 4)==0)
                 {
-                    head++;
+                    head++; //ignorujemy wszystko do końca el. head
                 }
                 if(strncmp(znacznik, "/head", 5)==0)
                 {
                     head=0;
                 }
             }
-            if(tmp!='\n'&&tmp!='\r'&&head==0)
+            if(*tmp!='\n'&&*tmp!='\r'&&head==0&&comment==0)
             {
                 waddch(pad_ptr, *tmp);
                 refresh();
             }
             tmp++;
-            count++;
         }
-        else
+        else //zaczyna się znacznik
         {
             tmp++;
             len=0;
-            while(*tmp!='>'&&*tmp!='\0'&&tmp)
+            while(*tmp!='>'&&*tmp!='\0'&&(!comment||(comment&&strncmp(tmp-2, "-->", 3))))
             {
+                if((strncmp(znacznik, "!--", 3)==0))
+                {
+                    comment++;//ignorujemy wszystko do końca komentarza
+                }
                 znacznik[len]=*tmp;
                 tmp++;
 
@@ -68,84 +65,78 @@ int view_page(Buffer * buffer)
                     len++;
                     znacznik[len]='\0';
                 }
-                else
+                else //jeśli znacznik jest wyjątkowo długi
                 {
                     len=0;
                     znacznik[TAG_LEN-1]='\0';
                 }
 
             }
-            tag_handler(znacznik, pad_ptr, buffer);
-            count+=len;
+            result = tag_handler(znacznik, pad_ptr, buffer);
+            if(result!=NULL) url=result;
+            if(comment&&*(tmp-2)=='-'&&*(tmp-1)=='-'&&*tmp=='>') comment=0;
             tmp++;
-
         }
     }
-    pad_scroll(buffer, pad_ptr, StartY, StartX, pad_lines, pad_cols);
+    pad_scroll(buffer, pad_ptr, pad_lines, COLS);
     delwin(pad_ptr);
-    return 0;
+    return url;
 }
 
-char * geturl (char * url)
+
+int pad_scroll(Buffer * buffer, WINDOW * pad_ptr, int pad_height, int width)
 {
+    int key, lines=0, end=0;
 
-    return (0);
-
-}
-
-int pad_scroll(Buffer * buffer, WINDOW * pad_ptr, int StartY, int StartX, int pad_height, int Width)
-{
-    int Key, cols = 0, Choice =0;
-
-    int Height = LINES;
-
-    WINDOW * SubWin;
-    while (Choice == 0)
+    WINDOW * window;
+    while (end==0)
     {
-        SubWin = subpad(pad_ptr, LINES, COLS, cols, 0);
-        keypad(SubWin, true);
-        prefresh(SubWin, 0,0,0,0,LINES,Width);
-        Key = wgetch(SubWin);
-        switch(Key)
+        mvprintw(LINES-1, 0, "Nacisnij 'q' by zakonczyc.");
+        refresh();
+        window = subpad(pad_ptr, LINES-1, COLS, lines, 0);
+        keypad(window, true);
+        printw("%d, ", prefresh(window, 0,0,0,0,LINES-1,width));
+        refresh();
+        key = wgetch(window);
+        switch(key)
         {
         case KEY_UP:
         {
-            if (cols <= 0) continue;
-            cols--;
+            if (lines <= 0) continue;
+            lines--;
             break;
         }
         case KEY_DOWN:
         {
-            if (cols+Height+1 >= pad_height) continue;
-            cols++;
+            if (lines+LINES+1 >= pad_height) continue;
+            lines++;
             break;
         }
         case KEY_PPAGE: /*Page Up*/
         {
-            if (cols <= 0) continue;
-            cols -= Height;
-            if (cols < 0) cols = 0;
+            if (lines <= 0) continue;
+            lines -= LINES;
+            if (lines < 0) lines = 0;
             break;
         }
         case KEY_NPAGE: /*Page Down*/
-            if (cols+Height+1 >= pad_height) continue;
-            cols += Height;
-            if (cols+Height+1 > pad_height) cols = pad_height-Height-1;
+            if (lines+LINES+1 >= pad_height) continue;
+            lines += LINES;
+            if (lines+LINES+1 > pad_height) lines = pad_height-LINES-1;
             break;
         case KEY_HOME:
-            cols = 0;
+            lines = 0;
             break;
         case KEY_END:
-            cols = pad_height-Height-1;
+            lines = pad_height-LINES-1;
             break;
         case 'q': /* Enter */
         {
-            Choice = 1;
+            end = 1;
             break;
         }
         }
-        delwin(SubWin);
+        delwin(window);
     }
-
     return(0);
 }
