@@ -54,13 +54,16 @@ char * get_line()
 
 static size_t save_to_buffer(void *ptr, size_t size, size_t nmemb, void *data)
 //właściwa funkcja zapisująca zawartość strony w zmiennej typu Buffer(struct Buffer)
-{
+{printw("jeszcze idzie");
+    refresh();
     size_t realsize = size * nmemb;
 
     Buffer * buffer = (Buffer *) data;
-
+printw("jeszcze idzie:%d ", nmemb);
+    refresh();
     buffer->data = realloc(buffer->data, buffer->size + realsize + 1);
-
+printw("jeszcze idzie");
+    refresh();
     if (buffer->data)
     {
         memcpy( &( buffer->data[ buffer->size ] ), ptr, realsize );
@@ -70,17 +73,27 @@ static size_t save_to_buffer(void *ptr, size_t size, size_t nmemb, void *data)
     return realsize;
 }
 
-int get_page(CURL * myHandle, Buffer * output)
+int get_page(CURL * myHandle, Buffer * output, char * url)
 //funkcja pobierająca plik tekstowy i zapisująca jego zawartość w strukturze Buffer
 {
     double length;
     CURLcode result;
 
-    curl_easy_setopt(myHandle, CURLOPT_URL, "http://studia.elka.pw.edu.pl");
+
+    printw("%s", url); refresh();
+        int c;
+        while(c=getch()!='q');
+
+    curl_easy_setopt(myHandle, CURLOPT_URL, url);
+    curl_easy_setopt(myHandle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, (void*)output);
     curl_easy_setopt(myHandle, CURLOPT_WRITEFUNCTION, save_to_buffer);
+    printw("jeszcze idzie");
+    refresh();
 
     result = curl_easy_perform(myHandle);
+    printw("jeszcze idzie");
+    refresh();
 
     if(result==0)
     {
@@ -186,4 +199,23 @@ int line_count(Buffer * buffer, int pad_cols)
     }
 
     return(fts);
+}
+
+void str_to_lower(char * str)
+{
+    int i;
+    for (i=0; i<strlen(str); i++)
+        str[i]=tolower(str[i]);
+}
+
+int follow_link(CURL * myHandle, char * url, Buffer * buffer)
+{
+    int i;
+    while (i=getch()!='q');
+        get_page(myHandle, buffer, url);
+        refresh();
+        while((i = getch())!='q');
+
+        view_page(myHandle, buffer, url);
+
 }

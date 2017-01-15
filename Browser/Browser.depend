@@ -1,15 +1,16 @@
 # depslib dependency file v1.0
-1484415983 source:/home/fatusia/PRM_projekt/Browser/main.c
+1484446081 source:/home/fatusia/PRM_projekt/Browser/main.c
 	"header.h"
 
-1484418005 /home/fatusia/PRM_projekt/Browser/header.h
+1484445334 /home/fatusia/PRM_projekt/Browser/header.h
 	<stdio.h>
 	<stdlib.h>
 	<curl/curl.h>
 	<string.h>
 	<ncurses.h>
+	<ctype.h>
 
-1484424070 source:/home/fatusia/PRM_projekt/Browser/page.c
+1484445531 source:/home/fatusia/PRM_projekt/Browser/page.c
 	"header.h"
 
 1483956137 source:/home/fatusia/PRM_projekt/Browser/url_fopen.c
@@ -20,8 +21,9 @@
 	<errno.h>
 	<curl/curl.h>
 
-1484418104 source:/home/fatusia/PRM_projekt/Browser/utilities.c
+1484445543 source:/home/fatusia/PRM_projekt/Browser/utilities.c
 	"header.h"
 
-1484166949 source:/home/fatusia/PRM_projekt/Browser/html_tags.c
+1484443606 source:/home/fatusia/PRM_projekt/Browser/html_tags.c
+	"header.h"
 
