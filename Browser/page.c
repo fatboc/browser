@@ -9,13 +9,14 @@ void * view_page(Buffer * buffer)
     int pad_lines;
     char znacznik[TAG_LEN]="";
 
-    int len=0, head=0, comment=0;
+    int len=0, head=0, txt=1, count=0, f=0;
+    int nest=0;
     char * tmp = buffer->data;
     //len - długość znacznika, head - obecna pozyzcja jest częścią el. head
     //comment - obecna pozycja jest częścią komentarza, tmp - zmienna pomocnicza
 
-    void * result;
-    static char * url;
+    static char * text;
+    static Link links[URL_START];
 
     pad_lines = line_count(buffer, COLS);
 
@@ -27,6 +28,7 @@ void * view_page(Buffer * buffer)
 
     while ((strcmp(znacznik,"/html")!=0)&&tmp)
     {
+
         if (*tmp!='<')
         {
             if (len>1)
@@ -39,8 +41,9 @@ void * view_page(Buffer * buffer)
                 {
                     head=0;
                 }
+
             }
-            if(*tmp!='\n'&&*tmp!='\r'&&head==0&&comment==0)
+            if(*tmp!='\n'&&*tmp!='\r'&&head==0)
             {
                 waddch(pad_ptr, *tmp);
                 refresh();
@@ -51,12 +54,11 @@ void * view_page(Buffer * buffer)
         {
             tmp++;
             len=0;
-            while(*tmp!='>'&&*tmp!='\0'&&(!comment||(comment&&strncmp(tmp-2, "-->", 3))))
+            while(*tmp!='>'&&*tmp!='\0')
             {
-                if((strncmp(znacznik, "!--", 3)==0))
-                {
-                    comment++;//ignorujemy wszystko do końca komentarza
-                }
+
+            //if(*tmp=='<')nest++;
+            //if (*tmp=='>') nest--;
                 znacznik[len]=*tmp;
                 tmp++;
 
@@ -72,30 +74,38 @@ void * view_page(Buffer * buffer)
                 }
 
             }
+            static char *result;
             result = tag_handler(znacznik, pad_ptr, buffer);
-            if(result!=NULL) url=result;
-            if(comment&&*(tmp-2)=='-'&&*(tmp-1)=='-'&&*tmp=='>') comment=0;
+            if(result!=NULL&&count<URL_START-1)
+            {
+                (links+count)->index = count+1;
+                (links+count)->url = result;
+                count++;
+            }
+
             tmp++;
         }
     }
-    pad_scroll(buffer, pad_ptr, pad_lines, COLS);
+
+    int i = pad_scroll(pad_ptr, pad_lines, COLS);
     delwin(pad_ptr);
-    return url;
+    if (i==-1) return NULL;
+    return links;
 }
 
 
-int pad_scroll(Buffer * buffer, WINDOW * pad_ptr, int pad_height, int width)
+int pad_scroll(WINDOW * pad_ptr, int pad_height, int width)
 {
     int key, lines=0, end=0;
 
     WINDOW * window;
     while (end==0)
     {
-        mvprintw(LINES-1, 0, "Nacisnij 'q' by zakonczyc.");
+        mvprintw(LINES-1, 0, "Nacisnij 'q' by zakonczyc wyswietlanie lub 'F1' by wyjsc.");
         refresh();
         window = subpad(pad_ptr, LINES-1, COLS, lines, 0);
         keypad(window, true);
-        printw("%d, ", prefresh(window, 0,0,0,0,LINES-1,width));
+        prefresh(window, 0,0,0,0,LINES-1,width);
         refresh();
         key = wgetch(window);
         switch(key)
@@ -133,6 +143,16 @@ int pad_scroll(Buffer * buffer, WINDOW * pad_ptr, int pad_height, int width)
         case 'q': /* Enter */
         {
             end = 1;
+            break;
+        }
+        case 'Q': /* Enter */
+        {
+            end = 1;
+            break;
+        }
+        case KEY_F(1):
+        {
+            return(-1);
             break;
         }
         }

@@ -28,19 +28,19 @@
 1484508542 source:/home/fatusia/PRM_projekt/browser-old/Browser/main.c
 	"header.h"
 
-1484506424 /home/fatusia/PRM_projekt/browser-old/Browser/header.h
+1484523588 /home/fatusia/PRM_projekt/browser-old/Browser/header.h
 	<stdio.h>
 	<stdlib.h>
 	<curl/curl.h>
 	<string.h>
 	<ncurses.h>
 
-1484507676 source:/home/fatusia/PRM_projekt/browser-old/Browser/page.c
+1484525512 source:/home/fatusia/PRM_projekt/browser-old/Browser/page.c
 	"header.h"
 
-1484508890 source:/home/fatusia/PRM_projekt/browser-old/Browser/utilities.c
+1484522635 source:/home/fatusia/PRM_projekt/browser-old/Browser/utilities.c
 	"header.h"
 
-1484509023 source:/home/fatusia/PRM_projekt/browser-old/Browser/html_tags.c
+1484524957 source:/home/fatusia/PRM_projekt/browser-old/Browser/html_tags.c
 	"header.h"
 

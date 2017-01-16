@@ -80,7 +80,6 @@ void * tag_handler(char * tag, WINDOW * window, Buffer * buffer)
         init_pair(2, COLOR_BLUE, COLOR_WHITE);
         wattron(window, COLOR_PAIR(2));
         wattron(window, A_UNDERLINE);
-        static char url[TAG_LEN];
         while(*tag!='\"') tag++;
         tag++;
         while(*tag!='\"')
@@ -89,6 +88,9 @@ void * tag_handler(char * tag, WINDOW * window, Buffer * buffer)
         tag++;
         }
         tag-=len;
+
+        static char *url;
+        url = malloc(len+1);
 
         strncpy(url, tag, len);
 
@@ -102,6 +104,15 @@ void * tag_handler(char * tag, WINDOW * window, Buffer * buffer)
         wattroff(window, A_UNDERLINE);
 
     }
+    if(strcmp(tag, "script")==0)
+    {
+        wattron(window, A_INVIS);
+    }
+    if(strcmp(tag, "/script")==0)
+    {
+        wattroff(window, A_INVIS);
+    }
+
 
     return 0;
 }

@@ -18,30 +18,44 @@ int init()
 int browse(CURL * myHandle, Buffer * buffer)
 //funckja łącząca pobranie i wyświetlenie strony
 {
-    int ch;
+    int ch=0,i;
 
-    char url[TAG_LEN]="http://www.example.com";
+    char * url;
+
+    url = get_url();
 
     get_page(myHandle, buffer, url);
 
-    while((ch = getch())!='w')
+    while(ch==0)
     {
-    int sh;
-    while((sh = getch())!='q');
+        int c;
+        while(c=getch()!='q');
 
-    char * tmp = view_page(buffer);
+        Link * tmp = view_page(buffer);
 
-    clear();
-    free(buffer->data);
-    buffer->data=NULL;
-    buffer->size=0;
+        if (tmp==NULL)
+        {
+            ch=1;
+            break;
+        }
 
-    printw("%s\n", tmp);
+        char * text = choose_link(tmp);
 
-    get_page(myHandle, buffer, tmp);
+        if(text==NULL)
+        {
+            ch=1;
+            break;
+        }
+
+        clear();
+        free(buffer->data);
+        buffer->data=NULL;
+        buffer->size=0;
+
+        get_page(myHandle, buffer, text);
+        for(i=0; i<URL_START; i++)
+            free(tmp[i].url);
     }
-
-
 
     return(EXIT_SUCCESS);
 }
@@ -52,7 +66,7 @@ char * get_line()
     char * line = NULL, * tmp = NULL;
     int ch = 0, count = 0;
 
-    do
+    while ((ch = getch())!='\n')
     {
         count++;
 
@@ -70,10 +84,21 @@ char * get_line()
             line[count-1] = ch;
         }
     }
-    while ((ch = getch())!='\n');
 
+    count++;
+    tmp = realloc(line, sizeof(char)*count);
+
+    if (tmp==NULL)
+    {
+        free(line);
+        return(NULL);
+    }
+    else
+    {
+        line = tmp;
+        line[count-1] = '\0';
+    }
     return (line);
-
 }
 
 
@@ -102,7 +127,7 @@ int get_page(CURL * myHandle, Buffer * buffer, char * url)
     long code;
     CURLcode result;
 
-    printw("Pobieranie...\n");
+    printw("Pobieranie \"%s\"...\n", url);
     refresh();
     curl_easy_setopt(myHandle, CURLOPT_URL, url);
 
@@ -136,47 +161,12 @@ int get_page(CURL * myHandle, Buffer * buffer, char * url)
 
     buffer->size = (int)length;
 
-    printw("\nWsicnij 'q' by wyswietlic strone.\n");
+    printw("\nNacisnij 'q' by wyswietlic strone.\n");
     refresh();
 
     return (int)result;
 }
 
-int * get_tag(char * tag, Buffer * result)
-//Funkcja zapisująca treść znacznika w zmiennej Buffer
-{
-    char tmp[TAG_LEN];
-    int len=0;
-
-    while(*tag!='>'&&*tag!='\0'&&tag)
-    {
-        tmp[len]=*tag;
-        tag++;
-
-        if (len<TAG_LEN-1)
-        {
-            len++;
-            tmp[len]='\0';
-        }
-        else
-        {
-            len =0;
-            tmp[TAG_LEN-1]='\0';
-        }
-
-    }
-    tag++;
-
-    //result = malloc(sizeof(tmp)+sizeof(len));
-
-    //strcpy(result->data, tmp);
-
-    result->data=tmp;
-
-    result->size=len;
-
-    return(0);
-}
 
 int line_count(Buffer * buffer, int pad_cols)
 //funcja zliczajaca ilosc wierszy wyswietlanej strony
@@ -235,7 +225,7 @@ int line_count(Buffer * buffer, int pad_cols)
                 }
             }
             if (!strcmp(znacznik, "br")||!strcmp(znacznik, "/p")||!strcmp(znacznik, "/div")||
-                !strcmp(znacznik, "/h1")||!strcmp(znacznik, "/tr")) lines++; //formatowanie wymusza nową linię
+                    !strcmp(znacznik, "/h1")||!strcmp(znacznik, "/tr")) lines++; //formatowanie wymusza nową linię
 
             if(comment&&*(tmp-2)=='-'&&*(tmp-1)=='-'&&*tmp=='>') comment=0;
             tmp++;
@@ -249,4 +239,57 @@ void str_to_lower(char * str)
     int i;
     for (i=0; i<strlen(str); i++)
         str[i]=tolower(str[i]);
+}
+
+char * get_url()
+{
+    static char * url;
+    echo();
+    keypad(stdscr, false);
+    printw("Wprowadz adres:\n");
+    refresh();
+    url = get_line();
+
+    noecho();
+    keypad(stdscr, true);
+    return(url);
+}
+
+char * choose_link(Link * links)
+{
+
+    WINDOW *pad_ptr;
+    int pad_lines = 155;
+    int count=0;
+    pad_ptr = newpad(pad_lines, COLS);
+
+    wprintw(pad_ptr, "Znalezione linki:\n\n");
+
+    while(links[count].index!=0)
+    {
+        wprintw(pad_ptr, "(%d) %s\n\n", links[count].index, links[count].url);
+        count++;
+    }
+    int i = pad_scroll(pad_ptr, pad_lines, COLS);
+    delwin(pad_ptr);
+    if (i==-1) return NULL;
+    if(links[0].url==NULL) return NULL;
+
+    clear();
+    printw("Wpisz numer linku, ktory chcialbys wyswietlic:\n");
+    echo();
+    char * choice;
+    choice = get_line();
+    int x = atoi(choice);
+    if(x>count)
+    {printw("NIE. NIE %d.\n", x);
+    refresh();
+    int c;
+    while(c=getch()!='q');
+    return NULL;
+    }
+    static char * result;
+    result = links[x-1].url;
+
+    return(result);
 }
