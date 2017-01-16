@@ -18,18 +18,26 @@ int init()
 int browse(CURL * myHandle, Buffer * buffer)
 //funckja łącząca pobranie i wyświetlenie strony
 {
-    int ch=0,i;
+    int ch=0,i,p=3;
 
     char * url;
 
-    url = get_url();
-
-    get_page(myHandle, buffer, url);
-
-    while(ch==0)
+    while(p==3||p==6)
     {
+        clear();
+        url = get_url();
+        p = get_page(myHandle, buffer, url);
         int c;
         while(c=getch()!='q');
+        if(p!=0&&p!=3&&p!=6)
+        {
+
+        return(EXIT_FAILURE);
+        }
+    }
+
+    while(ch==0&&p==0)
+    {
 
         Link * tmp = view_page(buffer);
 
@@ -52,9 +60,24 @@ int browse(CURL * myHandle, Buffer * buffer)
         buffer->data=NULL;
         buffer->size=0;
 
-        get_page(myHandle, buffer, text);
+
+        p = get_page(myHandle, buffer, text);
+
+        int c;
+        while(c=getch()!='q');
+
         for(i=0; i<URL_START; i++)
+        {
             free(tmp[i].url);
+            tmp[i].url=NULL;
+        }
+    }
+
+    if(p!=0)
+    {
+        int c;
+        while(c=getch()!='q');
+        return(EXIT_FAILURE);
     }
 
     return(EXIT_SUCCESS);
@@ -161,7 +184,10 @@ int get_page(CURL * myHandle, Buffer * buffer, char * url)
 
     buffer->size = (int)length;
 
-    printw("\nNacisnij 'q' by wyswietlic strone.\n");
+    if(result==0) printw("\nNacisnij 'q' by wyswietlic strone.\n");
+    else if(result==3) printw("\nNiewlasciwy adres. Nacisnij 'q'.\n");
+    else if(result==6) printw("\nNie odnaleziono hosta. Nacisnij 'q'.\n");
+    else printw("\nBlad polaczenia. Nacisnij 'q' by wyjsc.\n");
     refresh();
 
     return (int)result;
@@ -265,7 +291,7 @@ char * choose_link(Link * links)
 
     wprintw(pad_ptr, "Znalezione linki:\n\n");
 
-    while(links[count].index!=0)
+    while(links[count].index!=0&&links[count].url!=NULL)
     {
         wprintw(pad_ptr, "(%d) %s\n\n", links[count].index, links[count].url);
         count++;
@@ -282,14 +308,56 @@ char * choose_link(Link * links)
     choice = get_line();
     int x = atoi(choice);
     if(x>count)
-    {printw("NIE. NIE %d.\n", x);
-    refresh();
-    int c;
-    while(c=getch()!='q');
-    return NULL;
+    {
+        printw("NIE. NIE %d.\n", x);
+        refresh();
+        int c;
+        while(c=getch()!='q');
+        return NULL;
     }
     static char * result;
     result = links[x-1].url;
 
     return(result);
+}
+
+char * get_tag (WINDOW * pad_ptr, Buffer * buffer, Link * links, char * tmp, int comment)
+{
+    int len=0, count=0;
+    static char znacznik[TAG_LEN]="";
+    tmp++;
+    while(*tmp!='>'&&*tmp!='\0'&&(!comment||(comment&&strncmp(tmp-2, "-->", 3))))
+    {
+        if(*tmp=='<') strcpy(znacznik, get_tag(pad_ptr, buffer, links, tmp, comment));
+        if((strncmp(znacznik, "!--", 3)==0))
+        {
+            comment++;//ignorujemy wszystko do końca komentarza
+        }
+        znacznik[len]=*tmp;
+        tmp++;
+
+        if (len<TAG_LEN-1)
+        {
+            len++;
+            znacznik[len]='\0';
+        }
+        else //jeśli znacznik jest wyjątkowo długi
+        {
+            len=0;
+            znacznik[TAG_LEN-1]='\0';
+        }
+
+    }
+    static char *result;
+    result = tag_handler(znacznik, pad_ptr, buffer);
+    if(result!=NULL&&count<URL_START-1)
+    {
+        (links+count)->index = count+1;
+        (links+count)->url = result;
+        count++;
+    }
+    if(comment&&*(tmp-2)=='-'&&*(tmp-1)=='-'&&*tmp=='>') comment=0;
+    tmp++;
+
+    return(znacznik);
 }

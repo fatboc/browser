@@ -4,6 +4,41 @@ void * tag_handler(char * tag, WINDOW * window, Buffer * buffer)
 {
     str_to_lower(tag);
 
+    if(strcmp(tag, "br")==0)
+    {
+        waddch(window, '\n');
+        wrefresh(window);
+    }
+    if(strcmp(tag, "/table")==0)
+    {
+        waddch(window, '\n');
+        waddch(window, '\r');
+        wrefresh(window);
+    }
+    if(strcmp(tag, "/p")==0)
+    {
+        waddch(window, '\n');
+        waddch(window, '\r');
+        wrefresh(window);
+    }
+    if(strcmp(tag, "/div")==0)
+    {
+        waddch(window, '\n');
+        waddch(window, '\r');
+        wrefresh(window);
+    }
+    if(strcmp(tag, "/tr")==0)
+    {
+        waddch(window, '\n');
+        waddch(window, '\r');
+        wrefresh(window);
+    }
+    if(strcmp(tag, "/td")==0)
+    {
+        waddch(window, '\n');
+        waddch(window, '\r');
+        wrefresh(window);
+    }
     if(strcmp(tag, "b")==0)
     {
         wattron(window, A_BOLD);
@@ -54,26 +89,7 @@ void * tag_handler(char * tag, WINDOW * window, Buffer * buffer)
         wattroff(window, A_BOLD);
         wattron(window, A_ITALIC);
     }
-    if(strcmp(tag, "br")==0)
-    {
-        waddch(window, '\n');
-    }
-    if(strcmp(tag, "/p")==0)
-    {
-        waddch(window, '\n');
-    }
-    if(strcmp(tag, "/tr")==0)
-    {
-        waddch(window, '\n');
-    }
-    if(strcmp(tag, "/div")==0)
-    {
-        waddch(window, '\n');
-    }
-    if(strcmp(tag, "/h1")==0)
-    {
-        waddch(window, '\n');
-    }
+
     if(strncmp(tag, "a href", 6)==0)
     {
         int len =0;

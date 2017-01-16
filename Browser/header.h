@@ -22,11 +22,7 @@ typedef struct Link
 
 int init();
 
-void powitanie ();
-
 int browse(CURL * myHandle, Buffer * buffer);
-
-int close(CURL * myHandle, Buffer * buffer);
 
 int line_count(Buffer * buffer, int pad_cols);
 
@@ -38,13 +34,9 @@ char * get_line();
 
 int get_page(CURL * myHandle, Buffer * output, char * url);
 
-int check_url (char * url);
-
-void errurl_msg();
-
 void * view_page (Buffer * buffer);
 
-int * get_tag (char * tag, Buffer * result);
+char * get_tag (WINDOW * pad_ptr, Buffer * buffer, Link * links, char * tmp, int comment);
 
 char * choose_link(Link * links);
 
